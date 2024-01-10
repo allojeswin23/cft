@@ -10,8 +10,7 @@ run_test_aws_access: &run_test_aws_access
     command: |
       apk add --update aws-cli bash
       aws sts get-caller-identity
-      #`aws ecr get-login --no-include-email --region ${AWS_REGION}`
-      `aws ecr get-login-password --region ${AWS_REGION} | docker login --username AWS --password-stdin ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com`
+      aws ecr get-login-password --region ${AWS_REGION} | docker login --username AWS --password-stdin ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com
 
 set_env_vars: &set_env_vars
   run:
@@ -29,32 +28,31 @@ jobs:
     executor: anchore/anchore_engine
     shell: "/bin/bash -eo pipefail"
     steps:
-    - setup_remote_docker:
-        docker_layer_caching: true
-    - checkout
-    - <<: *run_test_aws_access
-    - <<: *set_env_vars
-    - run:
-        name: Build SkyMap Base Image
-        command: |
-          echo $image_tag
-          docker build --tag $image_tag .
-    - anchore/analyze_local_image:
-        image_name: $image_tag
-        policy_failure: False
-        timeout: '500'
-    - run:
-        name: Push docker-images to ECR with only the commit and latest tag
-        command: |
-          #`aws ecr get-login --region ${region} --no-include-email`
-          aws ecr get-login-password --region ${region} | docker login --username AWS --password-stdin ${AWS_ACCOUNT_ID}.dkr.ecr.${region}.amazonaws.com
-          docker push "${image_tag}"
-          # tag as latest for auto-deploy
-          function ecr-retag {
-            echo "Retagging ECR image [${1}:${2}] as [${1}:${3}]"
-            aws ecr put-image --repository-name "$1" --image-tag "$3" --region ${region} --image-manifest "$(aws ecr batch-get-image --repository-name "$1" --image-ids imageTag="$2" --region ${region} --query images[].imageManifest --output text)"
-          }
-          ecr-retag eq/ruby-base-image "${CIRCLE_SHA1}" "ruby-2.7.8-latest"
+      - setup_remote_docker:
+          docker_layer_caching: true
+      - checkout
+      - <<: *run_test_aws_access
+      - <<: *set_env_vars
+      - run:
+          name: Build SkyMap Base Image
+          command: |
+            echo $image_tag
+            docker build --tag $image_tag .
+      - anchore/analyze_local_image:
+          image_name: $image_tag
+          policy_failure: False
+          timeout: '500'
+      - run:
+          name: Push docker-images to ECR with only the commit and latest tag
+          command: |
+            aws ecr get-login-password --region ${region} | docker login --username AWS --password-stdin ${AWS_ACCOUNT_ID}.dkr.ecr.${region}.amazonaws.com
+            docker push "${image_tag}"
+            # tag as latest for auto-deploy
+            function ecr-retag {
+              echo "Retagging ECR image [${1}:${2}] as [${1}:${3}]"
+              aws ecr put-image --repository-name "$1" --image-tag "$3" --region ${region} --image-manifest "$(aws ecr batch-get-image --repository-name "$1" --image-ids imageTag="$2" --region ${region} --query images[].imageManifest --output text)"
+            }
+            ecr-retag eq/ruby-base-image "${CIRCLE_SHA1}" "ruby-2.7.8-latest"
 
 workflows:
   version: 2
