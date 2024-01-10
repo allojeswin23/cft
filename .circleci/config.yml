@@ -20,8 +20,8 @@ set_env_vars: &set_env_vars
       region=${AWS_REGION}
       image_tag="${account_id}.dkr.ecr.${region}.amazonaws.com/eq/ruby-base-image:${CIRCLE_SHA1}"
       echo "export account_id=$account_id" >> $BASH_ENV
-      echo "export region=$region" >>  $BASH_ENV
-      echo "export image_tag=$image_tag" >>  $BASH_ENV
+      echo "export region=$region" >> $BASH_ENV
+      echo "export image_tag=$image_tag" >> $BASH_ENV
 
 jobs:
   docker-build-image:
