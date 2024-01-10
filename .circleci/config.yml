@@ -10,6 +10,9 @@ run_test_aws_access: &run_test_aws_access
     command: |
       apk add --update aws-cli bash
       aws sts get-caller-identity
+      aws ecr get-login-password --region ${AWS_REGION} | docker login --username AWS --password-stdin ${account_id}.dkr.ecr.${AWS_REGION}.amazonaws.com
+
+set_env_vars: &set_env_vars
   run:
     name: set env variables
     command: |
@@ -42,7 +45,7 @@ jobs:
       - run:
           name: Push docker-images to ECR with only the commit and latest tag
           command: |
-            aws ecr get-login-password --region ${region} | docker login --username AWS --password-stdin ${AWS_ACCOUNT_ID}.dkr.ecr.${region}.amazonaws.com
+            aws ecr get-login-password --region ${region} | docker login --username AWS --password-stdin ${account_id}.dkr.ecr.${region}.amazonaws.com
             docker push "${image_tag}"
             # tag as latest for auto-deploy
             function ecr-retag {
