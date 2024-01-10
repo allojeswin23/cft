@@ -51,7 +51,7 @@ jobs:
       - anchore/analyze_local_image:
           image_name: $IMAGE_TAG
           policy_failure: False
-          timeout: 500
+          timeout: "500"
       - run:
           name: Push docker-images to ECR with commit and latest tag
           command: |
