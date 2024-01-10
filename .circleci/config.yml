@@ -8,10 +8,8 @@ run_test_aws_access: &run_test_aws_access
     name: test aws access
     shell: "/bin/sh -eo pipefail"
     command: |
+      apk add --update aws-cli bash
       aws sts get-caller-identity
-      aws ecr get-login-password --region ${AWS_REGION} | docker login --username AWS --password-stdin ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com
-
-set_env_vars: &set_env_vars
   run:
     name: set env variables
     command: |
