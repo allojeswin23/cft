@@ -6,7 +6,7 @@ orbs:
 run_test_aws_access: &run_test_aws_access
   run:
     name: test aws access
-    #shell: "/bin/sh"
+    shell: "/bin/sh"
     command: |
       apk add --update aws-cli bash
       aws sts get-caller-identity
