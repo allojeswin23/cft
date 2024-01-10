@@ -1,69 +1,63 @@
 version: 2.1
-
 orbs:
   browser-tools: circleci/browser-tools@0.1.3
   anchore: anchore/anchore-engine@1.8.4
-
-commands:
-  test_aws_access:
-    description: Tests AWS access
-    steps:
-      - run:
-          name: Install AWS CLI
-          command: apk add --update aws-cli bash
-      - run:
-          name: Verify AWS credentials
-          command: aws sts get-caller-identity
-      - run:
-          name: Log in to ECR
-          command: |
-            aws ecr get-login-password --region ${AWS_REGION} | docker login --username AWS --password-stdin ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com
-
-  set_env_vars:
-    description: Sets environment variables
-    steps:
-      - run:
-          name: Set environment variables
-          command: |
-            account_id=$(aws sts get-caller-identity --output text --query "Account")
-            region=${AWS_REGION}
-            image_tag="${account_id}.dkr.ecr.${region}.amazonaws.com/eq/ruby-base-image:${CIRCLE_SHA1}"
-            echo 'export AWS_ACCOUNT_ID=$account_id' >> $BASH_ENV
-            echo 'export AWS_REGION=$region' >> $BASH_ENV
-            echo 'export IMAGE_TAG=$image_tag' >> $BASH_ENV
-
+run_test_aws_access: &run_test_aws_access
+  run:
+    name: test aws access
+    shell: "/bin/sh -eo pipefail"
+    command: |
+      apk add --update aws-cli bash
+      aws sts get-caller-identity 
+      `aws ecr get-login --no-include-email --region ${AWS_REGION}`
+set_env_vars: &set_env_vars
+  deploy:
+    name: set env variables
+    command: |
+      account_id=$(aws sts get-caller-identity --output text --query "Account")
+      region=${AWS_REGION}
+      image_tag="${account_id}.dkr.ecr.${region}.amazonaws.com/eq/ruby-base-image:${CIRCLE_SHA1}"
+      echo "export account_id=$account_id" >> $BASH_ENV
+      echo "export region=$region" >>  $BASH_ENV
+      echo "export image_tag=$image_tag" >>  $BASH_ENV
+      
 jobs:
   docker-build-image:
     executor: anchore/anchore_engine
-    shell: bash
-
+    shell: "/bin/bash -eo pipefail"
     steps:
-      - checkout
-      - setup_remote_docker:
-          docker_layer_caching: true
-      - test_aws_access
-      - set_env_vars
-      - run:
-          name: Build SkyMap Base Image
-          command: |
-            echo $IMAGE_TAG
-            docker build --tag $IMAGE_TAG .
-      - anchore/analyze_local_image:
-          image_name: $IMAGE_TAG
-          policy_failure: False
-          timeout: "500"
-      - run:
-          name: Push docker-images to ECR with commit and latest tag
-          command: |
-            docker push "${IMAGE_TAG}"
-            ecr-retag eq/ruby-base-image "${CIRCLE_SHA1}" "ruby-2.7.8-latest"
-
+    - setup_remote_docker:
+        docker_layer_caching: true
+    - checkout
+    - <<: *run_test_aws_access
+    - <<: *set_env_vars
+    - run:
+        name: Build SkyMap Base Image
+        command: |
+          echo $image_tag
+          docker build --tag $image_tag .
+    - anchore/analyze_local_image:
+        image_name: $image_tag
+        policy_failure: False
+        timeout: '500'
+    - deploy:
+        name: Push docker-images to ecr with only the commit and latest tag
+        command: |
+          `aws ecr get-login --region ${region} --no-include-email`
+          docker push "${image_tag}"
+          # tag as latest for auto-deploy
+          function ecr-retag {
+            echo "Retagging ecr image [${1}:${2}] as [${1}:${3}]"
+            aws ecr put-image --repository-name "$1" --image-tag "$3" --region ${region} --image-manifest "$(aws ecr batch-get-image --repository-name "$1" --image-ids imageTag="$2" --region ${region} --query images[].imageManifest --output text)"
+          }
+          ecr-retag eq/ruby-base-image "${CIRCLE_SHA1}" "ruby-2.7.8-latest"
+    
 workflows:
   version: 2
   commit:
     jobs:
       - docker-build-image
-
+  
   scheduled-workflow:
     triggers:
       - schedule:
