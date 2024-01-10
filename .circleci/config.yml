@@ -10,7 +10,7 @@ run_test_aws_access: &run_test_aws_access
     command: |
       apk add --update aws-cli bash
       aws sts get-caller-identity
-      aws ecr get-login-password --region ${AWS_REGION} | docker login --username AWS --password-stdin ${account_id}.dkr.ecr.${AWS_REGION}.amazonaws.com
+      aws ecr get-login-password --region us-east-2 | docker login --username AWS --password-stdin 423594114171.dkr.ecr.us-east-2.amazonaws.com
 #
 set_env_vars: &set_env_vars
   run:
