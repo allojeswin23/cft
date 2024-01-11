@@ -1,4 +1,4 @@
-FROM ruby:2.7.2-alpine as rails
+FROM ruby:2.7.3-alpine as rails
 
 # Install general packages
 #ENV PACKAGES build-base postgresql-dev gnupg make bash libpq netcat-openbsd git python3-dev python3 py3-pip openssh jq libxrender wkhtmltopdf
