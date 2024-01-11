@@ -5,7 +5,7 @@ orbs:
 run_test_aws_access: &run_test_aws_access
   run:
     name: test aws access
-    shell: "/bin/sh -eo pipefail"
+    shell: "/bin/bash -eo pipefail"
     command: |
       apk add --update aws-cli bash
       aws sts get-caller-identity 
