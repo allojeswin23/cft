@@ -40,17 +40,34 @@ jobs:
         image_name: $image_tag
         policy_failure: False
         timeout: '500'
-    - deploy:
-        name: Push docker-images to ecr with only the commit and latest tag
-        command: |
-          `aws ecr get-login --region ${region} --no-include-email`
-          docker push "${image_tag}"
+    #- deploy:
+        #name: Push docker-images to ecr with only the commit and latest tag
+        #command: |
+          #`aws ecr get-login --region ${region} --no-include-email`
+          #docker push "${image_tag}"
           # tag as latest for auto-deploy
-          function ecr-retag {
-            echo "Retagging ecr image [${1}:${2}] as [${1}:${3}]"
-            aws ecr put-image --repository-name "$1" --image-tag "$3" --region ${region} --image-manifest "$(aws ecr batch-get-image --repository-name "$1" --image-ids imageTag="$2" --region ${region} --query images[].imageManifest --output text)"
-          }
-          ecr-retag eq/ruby-base-image "${CIRCLE_SHA1}" "ruby-2.7.8-latest"
+          #function ecr-retag {
+            #echo "Retagging ecr image [${1}:${2}] as [${1}:${3}]"
+            #aws ecr put-image --repository-name "$1" --image-tag "$3" --region ${region} --image-manifest "$(aws ecr batch-get-image --repository-name "$1" --image-ids imageTag="$2" --region ${region} --query images[].imageManifest --output text)"
+          #}
+          #ecr-retag eq/ruby-base-image "${CIRCLE_SHA1}" "ruby-2.7.8-latest"
+
+    - deploy:
+        name: Push docker-images to ECR with latest tag management
+        command: |
+          `aws ecr get-login-password --region ${region} | docker login -u AWS -p "$PASSWORD" $AWS_ACCOUNT_ID.dkr.ecr.${region}.amazonaws.com 
+          # Push the newly built image with its original tag
+           docker push "${image_tag}"
+
+          # Retrieve the image digest of the newly pushed image
+          new_image_digest=$(aws ecr describe-images --repository-name eq/ruby-base-image --image-ids imageTag="${CIRCLE_SHA1}" --query 'imageDetails[].imageDigest' --output text)
+
+           # Re-tag the newly pushed image as "latest"
+           aws ecr put-image --repository-name eq/ruby-base-image --image-tag latest --image-digest "$new_image_digest"
+
+           # Remove the "latest" tag from any other images in the repository
+           aws ecr batch-delete-image --repository-name eq/ruby-base-image --image-ids imageTag=2.7.8-latest
+
     
 workflows:
   version: 2
