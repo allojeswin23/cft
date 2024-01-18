@@ -41,14 +41,20 @@ jobs:
         policy_failure: False
         timeout: '500'
     - deploy:
-        name: Push docker-images to ecr with only the commit and latest tag
+        name: Push docker-image to ECR with commit SHA1 tag
         command: |
-          `aws ecr get-login --region ${region} --no-include-email`
-          docker manifest create ${account_id}.dkr.ecr.${region}.amazonaws.com/eq/ruby-base-image:latest \
-              --amend ${image_tag} \
-              --amend ${account_id}.dkr.ecr.${region}.amazonaws.com/eq/ruby-base-image:${CIRCLE_SHA1}
-          docker manifest push ${account_id}.dkr.ecr.${region}.amazonaws.com/eq/ruby-base-image:latest
-    
+          docker push ${image_tag}
+    - deploy:
+        name: Retag image with SHA1 and latest tag
+        command: |
+          function retag_image {
+            local image_uri=$1
+            local sha1_tag=$2
+            local latest_tag=$3
+            docker tag $image_uri $image_uri:$sha1_tag
+            docker tag $image_uri $image_uri:$latest_tag
+          }
+          retag_image ${image_tag} ${CIRCLE_SHA1} latest
 workflows:
   version: 2
   commit:
