@@ -41,20 +41,16 @@ jobs:
         policy_failure: False
         timeout: '500'
     - deploy:
-        name: Push docker-image to ECR with commit SHA1 tag
+        name: Push docker-images to ecr with only the commit and latest tag
         command: |
-          docker push ${image_tag}
-    - deploy:
-        name: Retag image with SHA1 and latest tag
-        command: |
-          function retag_image {
-            local image_uri=$1
-            local sha1_tag=$2
-            local latest_tag=$3
-            docker tag $image_uri $image_uri:$sha1_tag
-            docker tag $image_uri $image_uri:$latest_tag
+          `aws ecr get-login --region ${region} --no-include-email`
+          docker push "${image_tag}"
+          # tag as latest for auto-deploy
+          function ecr-retag {
+            echo "Retagging ecr image [${1}:${2}] as [${1}:${3}]"
+            aws ecr put-image --repository-name "$1" --image-tag "$3" --region ${region} --image-manifest "$(aws ecr batch-get-image --repository-name "$1" --image-ids imageTag="$2" --region ${region} --query images[].imageManifest --output text)"
           }
-          retag_image ${image_tag} ${CIRCLE_SHA1} latest
+          ecr-retag eq/ruby-base-image "${CIRCLE_SHA1}" "ruby-2.7.8-latest"
 workflows:
   version: 2
   commit:
