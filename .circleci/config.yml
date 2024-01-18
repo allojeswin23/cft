@@ -44,6 +44,7 @@ jobs:
         name: Push docker-images to ecr with only the commit and latest tag
         command: |
           `aws ecr get-login --region ${region} --no-include-email`
+          docker tag "${image_tag}" "${account_id}.dkr.ecr.${region}.amazonaws.com/eq/ruby-base-image:${CIRCLE_SHA1}"
           docker tag "${image_tag}" "${account_id}.dkr.ecr.${region}.amazonaws.com/eq/ruby-base-image:ruby-2.7.8-latest"
           docker push "${account_id}.dkr.ecr.${region}.amazonaws.com/eq/ruby-base-image:ruby-2.7.8-latest"
     
