@@ -44,25 +44,20 @@ jobs:
           name: Push docker-images to ECR with only the commit and latest tag
           command: |
             # Fetch all images with "ruby-2.7.8-latest" in the tag
-            images_to_delete=$(aws ecr list-images --repository-name eq/ruby-base-image --filter "tagStatus=TAGGED" --query "imageIds[?contains(imageTag, 'ruby-2.7.8-latest')].[imageDigest]" --region ${region} --output text || true)
+            existing_digest=$(aws ecr batch-get-image --repository-name eq/ruby-base-image --image-ids imageTag="ruby-2.7.8-latest" --region ${region} --query images[].imageDigest --output text || true)
 
-            # Delete existing images if they exist
-            if [[ -n "$images_to_delete" ]]; then
-              echo "Deleting images with 'ruby-2.7.8-latest' tag"
-              aws ecr batch-delete-image --repository-name eq/ruby-base-image --image-ids $(echo $images_to_delete | sed 's/\s/\n/g') --region ${region}
+            if [[ -n "$existing_digest" && "$existing_digest" != "$(docker image inspect -f '{{.Digest}}' "${image_tag}")" ]]; then
+              echo "Deleting outdated 'ruby-2.7.8-latest' image with digest: $existing_digest"
+              aws ecr batch-delete-image --repository-name eq/ruby-base-image --image-ids imageTag="ruby-2.7.8-latest" --region ${region}
             fi
 
-            # Push the new image with commit and latest tag
             `aws ecr get-login --region ${region} --no-include-email`
             docker push "${image_tag}"
 
-            # Define the ecr-retag function
             function ecr-retag {
-              echo "Retagging ECR image [${1}:${2}] as [${1}:${3}]"
+              echo "Retagging ecr image [${1}:${2}] as [${1}:${3}]"
               aws ecr put-image --repository-name "$1" --image-tag "$3" --region ${region} --image-manifest "$(aws ecr batch-get-image --repository-name "$1" --image-ids imageTag="$2" --region ${region} --query images[].imageManifest --output text)"
             }
-
-            # Call the ecr-retag function
             ecr-retag eq/ruby-base-image "${CIRCLE_SHA1}" "ruby-2.7.8-latest"
 
             
