@@ -56,7 +56,7 @@ jobs:
               exit $return_code
             fi
           }
-          delete_old_latest_image
+          delete_old_latest_image eq/ruby-base-image "{latest_tag}"
 
     - deploy: # Push docker image with tag and latest tag
         name: Push docker-images to ecr with only the commit and latest tag
