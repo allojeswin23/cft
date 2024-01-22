@@ -2,7 +2,6 @@ version: 2.1
 orbs:
   browser-tools: circleci/browser-tools@1.4.6
   anchore: anchore/anchore-engine@1.9.0
-
 run_test_aws_access: &run_test_aws_access
   run:
     name: test aws access
@@ -10,8 +9,7 @@ run_test_aws_access: &run_test_aws_access
     command: |
       apk add --update aws-cli bash
       aws sts get-caller-identity 
-      $(aws ecr get-login --no-include-email --region ${AWS_REGION})
-
+      `aws ecr get-login --no-include-email --region ${AWS_REGION}`
 set_env_vars: &set_env_vars
   deploy:
     name: set env variables
@@ -45,7 +43,7 @@ jobs:
       - deploy:
           name: Push docker-images to ECR with only the commit and latest tag
           command: |
-            $(aws ecr get-login --region ${region} --no-include-email)
+            `aws ecr get-login --region ${region} --no-include-email`
             docker push "${image_tag}"
             # tag as latest for auto-deploy
             function ecr-retag {
