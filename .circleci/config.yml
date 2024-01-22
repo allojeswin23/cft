@@ -48,7 +48,7 @@ jobs:
             # tag as latest for auto-deploy
             function ecr-retag {
               echo "Retagging ECR image [${1}:${2}] as [${1}:${3}]"
-              aws ecr put-image --repository-name "$1" --image-tag "$3" --region ${region} --image-manifest "$(aws ecr batch-get-image --repository-name "$1" --image-ids imageTag="$2" --output text --query 'images[].imageManifest')"
+              aws ecr put-image --repository-name "$1" --image-tag "$3" --region ${region} --image-manifest "$(aws ecr batch-get-image --repository-name "$1" --image-ids imageTag="$2" --region ${region} --output text --query 'images[].imageManifest')"
             }
             ecr-retag eq/ruby-base-image "${CIRCLE_SHA1}" "ruby-2.7.8-latest"
             aws ecr describe-images --repository-name "$1"
