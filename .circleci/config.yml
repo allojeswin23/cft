@@ -43,13 +43,13 @@ jobs:
       - deploy:
           name: Push docker-images to ECR with only the commit and latest tag
           command: |
-            # Fetch existing image digest for "ruby-2.7.8-latest" tag
-            existing_digest=$(aws ecr batch-get-image --repository-name eq/ruby-base-image --image-ids imageTag="ruby-2.7.8-latest" --region ${region} --query images[].imageDigest --output text || true)
+            # Fetch all images with "ruby-2.7.8-latest" in the tag
+            images_to_delete=$(aws ecr list-images --repository-name eq/ruby-base-image --filter "tagStatus=TAGGED" --query "imageIds[?contains(imageTag, 'ruby-2.7.8-latest')].imageDigest" --region ${region} --output text || true)
             
-            # Delete existing image if it exists
-            if [[ -n "$existing_digest" ]]; then
-              echo "Deleting existing 'ruby-2.7.8-latest' image with digest: $existing_digest"
-              aws ecr batch-delete-image --repository-name eq/ruby-base-image --image-ids imageTag="ruby-2.7.8-latest" --region ${region}
+            # Delete existing images if they exist
+            if [[ -n "$images_to_delete" ]]; then
+              echo "Deleting images with 'ruby-2.7.8-latest' tag"
+              aws ecr batch-delete-image --repository-name eq/ruby-base-image --image-ids $images_to_delete --region ${region}
             fi
 
             # Push the new image with commit and latest tag
@@ -64,6 +64,7 @@ jobs:
 
             # Call the ecr-retag function
             ecr-retag eq/ruby-base-image "${CIRCLE_SHA1}" "ruby-2.7.8-latest"
+            
 
 workflows:
   version: 2
