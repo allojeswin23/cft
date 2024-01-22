@@ -1,18 +1,15 @@
 version: 2.1
-
 orbs:
   browser-tools: circleci/browser-tools@1.4.6
   anchore: anchore/anchore-engine@1.9.0
-
 run_test_aws_access: &run_test_aws_access
   run:
     name: test aws access
     shell: "/bin/sh -eo pipefail"
     command: |
       apk add --update aws-cli bash
-      aws sts get-caller-identity
+      aws sts get-caller-identity 
       `aws ecr get-login --no-include-email --region ${AWS_REGION}`
-
 set_env_vars: &set_env_vars
   deploy:
     name: set env variables
@@ -35,13 +32,6 @@ jobs:
       - <<: *run_test_aws_access
       - <<: *set_env_vars
       - run:
-          name: Check for changes
-          command: |
-            git diff --quiet --exit-code Dockerfile || exit 0
-            git diff --quiet --exit-code src/ || exit 0
-            echo "No changes to Dockerfile or source code. Skipping image build and push."
-            exit 1
-      - run:
           name: Build SkyMap Base Image
           command: |
             echo $image_tag
@@ -50,17 +40,24 @@ jobs:
           image_name: $image_tag
           policy_failure: False
           timeout: '500'
-      - run:
+      - deploy:
           name: Push docker-images to ECR with only the commit and latest tag
           command: |
-            `aws ecr get-login --region ${region} --no-include-email`
+            # Declare unique_tag combining commit SHA1 and "ruby-2.7.8-latest"
+            unique_tag="${CIRCLE_SHA1}-ruby-2.7.8-latest"
+            image_tag="${account_id}.dkr.ecr.${region}.amazonaws.com/eq/ruby-base-image:${unique_tag}"
+
+            # AWS ECR login
+            aws ecr get-login --region ${region} --no-include-email | sh -
+
+            # Fetch existing image digest for the unique tag
+            existing_digest=$(aws ecr describe-images --repository-name eq/ruby-base-image --query "images[?imageTag=='${unique_tag}'].imageDigest" --output text --region ${region})
+
+            # Retag existing image using Docker command
+            docker tag "${account_id}.dkr.ecr.${region}.amazonaws.com/eq/ruby-base-image:${existing_digest}" "${image_tag}"
+
+            # Push the newly tagged image
             docker push "${image_tag}"
-            # tag as latest for auto-deploy
-            function ecr-retag {
-              echo "Retagging ECR image [${1}:${2}] as [${1}:${3}]"
-              aws ecr put-image --repository-name "$1" --image-tag "$3" --region ${region} --image-manifest "$(aws ecr batch-get-image --repository-name "$1" --image-ids imageTag="$2" --region ${region} --query images[].imageManifest --output text)"
-            }
-            ecr-retag eq/ruby-base-image "${CIRCLE_SHA1}" "ruby-2.7.8-latest"
 
 workflows:
   version: 2
