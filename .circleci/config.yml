@@ -44,11 +44,10 @@ jobs:
         timeout: '500'
 
     - deploy: 
-        # Get the image id of image and delete old image with 'ruby-2.7.8-latest' tag
+        # Delete old image with 'ruby-2.7.8-latest' tag
         name: Delete existing latest image before pushing
         command: |
           `aws ecr get-login --no-include-email --region ${region}`
-          image_id=$(aws ecr describe-images --repository-name eq/ruby-base-image --filters "name=tag,value=${latest_tag}" --query 'images[0].imageId' --output text)
           function delete_old_latest_image {
             aws ecr batch-delete-image --repository-name eq/ruby-base-image --image-ids imageTag="${latest_tag}" --region ${region}
             return_code=$?
