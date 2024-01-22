@@ -7,7 +7,7 @@ RUN echo "Updating repos..." && apk update > /dev/null && \
     echo "Installing packages: ${PACKAGES}..." && apk add --no-cache $PACKAGES > /dev/null
     
 # Install dependencies for wkhtmltopdf
-RUN apk add --update --no-cache --wait 10 libstdc++ libx11 libxrender libxext libssl1.1 ca-certificates fontconfig freetype ttf-dejavu ttf-droid ttf-freefont ttf-liberation ttf-ubuntu-font-family \
+RUN apk add --update --no-cache --wait 10 libstdc++ libx11 libxrender libxext libssl1.1 ca-certificates fontconfig freetype ttf-dejavu ttf-droid ttf-freefont ttf-liberation \
     && apk add --update --no-cache --virtual .build-deps msttcorefonts-installer \
     && update-ms-fonts \
     && fc-cache -f \
