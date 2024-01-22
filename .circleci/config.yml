@@ -17,9 +17,11 @@ set_env_vars: &set_env_vars
       account_id=$(aws sts get-caller-identity --output text --query "Account")
       region=${AWS_REGION}
       image_tag="${account_id}.dkr.ecr.${region}.amazonaws.com/eq/ruby-base-image:${CIRCLE_SHA1}"
+      latest_tag="ruby-2.7.8-latest"
       echo "export account_id=$account_id" >> $BASH_ENV
       echo "export region=$region" >>  $BASH_ENV
       echo "export image_tag=$image_tag" >>  $BASH_ENV
+      echo "export latest_tag=$latest_tag" >> $BASH_ENV
       
 jobs:
   docker-build-image:
@@ -40,6 +42,21 @@ jobs:
         image_name: $image_tag
         policy_failure: False
         timeout: '500'
+
+    - deploy:
+        name: Delete the existing image with ruby-2.7.8-latest tag
+        command: |
+          `aws ecr get-login --region ${region} --no-include-email`
+          function delete_old_latest_image {
+            aws ecr batch-delete-image --repository-name eq/ruby-base-image --image-ids imageTag="${latest_tag}" --region ${region}
+            return_code=$?
+            if [ $return_code -ne 0 ]; then
+              echo "Error: Failed to delete existing image with tag '${latest_tag}'"
+              exit $return_code
+            fi
+          }
+          delete_old_latest_image
+
     - deploy:
         name: Push docker-images to ecr with only the commit and latest tag
         command: |
