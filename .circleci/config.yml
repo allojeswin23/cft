@@ -53,11 +53,18 @@ jobs:
             # Fetch existing image digest for the unique tag
             existing_digest=$(aws ecr describe-images --repository-name eq/ruby-base-image --query "images[?imageTag=='${unique_tag}'].imageDigest" --output text --region ${region})
 
-            # Retag existing image using Docker command
-            docker tag "${account_id}.dkr.ecr.${region}.amazonaws.com/eq/ruby-base-image:${existing_digest}" "${image_tag}"
+            # If the existing_digest is empty, the image doesn't exist, so push a new one
+              if [ -z "$existing_digest" ]; then
+              docker build --tag "${image_tag}" .
+              docker push "${image_tag}"
+            else
+              # Retag existing image using Docker command
+              docker tag "${account_id}.dkr.ecr.${region}.amazonaws.com/eq/ruby-base-image@${existing_digest}" "${image_tag}"
 
-            # Push the newly tagged image
-            docker push "${image_tag}"
+              # Push the newly tagged image
+              docker push "${image_tag}"
+            fi
+
 
 workflows:
   version: 2
