@@ -11,7 +11,7 @@ run_test_aws_access: &run_test_aws_access
       aws sts get-caller-identity 
       `aws ecr get-login --no-include-email --region ${AWS_REGION}`
 set_env_vars: &set_env_vars
-  deploy:
+  run:
     name: set env variables
     command: |
       account_id=$(aws sts get-caller-identity --output text --query "Account")
@@ -40,31 +40,18 @@ jobs:
           image_name: $image_tag
           policy_failure: False
           timeout: '500'
-      - deploy:
+      - run:
           name: Push docker-images to ECR with only the commit and latest tag
           command: |
-            # Declare unique_tag combining commit SHA1 and "ruby-2.7.8-latest"
-            unique_tag="${CIRCLE_SHA1}-ruby-2.7.8-latest"
-            image_tag="${account_id}.dkr.ecr.${region}.amazonaws.com/eq/ruby-base-image:${unique_tag}"
-
-            # AWS ECR login
-            aws ecr get-login --region ${region} --no-include-email | sh -
-
-            # Fetch existing image digest for the unique tag
-            existing_digest=$(aws ecr describe-images --repository-name eq/ruby-base-image --query "images[?imageTag=='${unique_tag}'].imageDigest" --output text --region ${region})
-
-            # If the existing_digest is empty, the image doesn't exist, so push a new one
-              if [ -z "$existing_digest" ]; then
-              docker build --tag "${image_tag}" .
-              docker push "${image_tag}"
-            else
-              # Retag existing image using Docker command
-              docker tag "${account_id}.dkr.ecr.${region}.amazonaws.com/eq/ruby-base-image@${existing_digest}" "${image_tag}"
-
-              # Push the newly tagged image
-              docker push "${image_tag}"
-            fi
-
+            `aws ecr get-login --region ${region} --no-include-email`
+            docker push "${image_tag}"
+            # tag as latest for auto-deploy
+            function ecr-retag {
+              echo "Retagging ECR image [${1}:${2}] as [${1}:${3}]"
+              aws ecr put-image --repository-name "$1" --image-tag "$3" --region ${region} --image-manifest "$(aws ecr batch-get-image --repository-name "$1" --image-ids imageTag="$2" --output text --query 'images[].imageManifest')"
+            }
+            ecr-retag eq/ruby-base-image "${CIRCLE_SHA1}" "ruby-2.7.8-latest"
+            aws ecr describe-images --repository-name "$1"
 
 workflows:
   version: 2
