@@ -1,5 +1,7 @@
 FROM ruby:2.7.8-alpine as rails
 
+RUN touch /tmp/cache-buster
+
 # Install general packages
 #ENV PACKAGES build-base postgresql-dev gnupg make bash libpq netcat-openbsd git python3-dev python3 py3-pip openssh jq libxrender wkhtmltopdf
 ENV PACKAGES build-base postgresql-dev gnupg make bash libpq netcat-openbsd git python3-dev python3 py3-pip openssh jq libxrender
@@ -21,4 +23,4 @@ RUN echo "Updating repos..." && apk update --no-cache > /dev/null && \
 # Install YARN
 RUN npm install -g yarn
 
-########################################
+#######################################
