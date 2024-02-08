@@ -65,7 +65,9 @@ jobs:
             `aws ecr get-login --no-include-email --region ${region}`
           fi
 
-          if [ "$existing_image_check" -gt 0 ]; then
+          existing_image_check=0
+
+          if [[ "$existing_image_check" =~ ^[0-9]+$ && "$existing_image_check" -gt 0 ]]; then
             echo "Deleting existing image..."
             aws ecr batch-delete-image --repository-name eq/ruby-base-image --image-ids imageTag=ruby-2.7.8-latest
           fi
