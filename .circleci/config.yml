@@ -69,7 +69,7 @@ jobs:
             echo "Deleting existing image..."
             aws ecr batch-delete-image --repository-name eq/ruby-base-image --image-ids imageTag=ruby-2.7.8-latest
           fi
-          
+
           docker push "${image_tag}"
           # tag as latest for auto-deploy
           function ecr-retag {
@@ -94,4 +94,3 @@ workflows:
                 - main
     jobs:
       - docker-build-image
-      ##
