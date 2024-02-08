@@ -43,22 +43,22 @@ jobs:
         policy_failure: False
         timeout: '500'
 
-    - run: 
+    #- run: 
         # Delete old image with 'ruby-2.7.8-latest' tag
-        name: Delete existing latest image before pushing
-        command: |
-          `aws ecr get-login --no-include-email --region ${region}`
-          function delete_old_latest_image {
-            aws ecr batch-delete-image --repository-name eq/ruby-base-image --image-ids imageTag="${latest_tag}" --region ${region}
-            return_code=$?
-            if [ $return_code -ne 0 ]; then
-              echo "Error: Failed to delete existing image with tag '${latest_tag}'"
-              exit $return_code
-            fi
-          }
-          delete_old_latest_image eq/ruby-base-image "${latest_tag}"
+        #name: Delete existing latest image before pushing
+        #command: |
+          #`aws ecr get-login --no-include-email --region ${region}`
+          #function delete_old_latest_image {
+            #aws ecr batch-delete-image --repository-name eq/ruby-base-image --image-ids imageTag="${latest_tag}" --region ${region}
+            #return_code=$?
+            #if [ $return_code -ne 0 ]; then
+              #echo "Error: Failed to delete existing image with tag '${latest_tag}'"
+              #exit $return_code
+            #fi
+          #}
+          #delete_old_latest_image eq/ruby-base-image "${latest_tag}"
 
-    - run: # Push docker image with tag and latest tag
+    - run: 
         name: Push docker-images to ecr with only the commit and latest tag
         command: |
           if [ "$(aws ecr describe-repositories --query repositories[0].authorizationData[0].authorizationToken --output text)" = "" ]; then
