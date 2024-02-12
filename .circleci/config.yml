@@ -17,11 +17,9 @@ set_env_vars: &set_env_vars
       account_id=$(aws sts get-caller-identity --output text --query "Account")
       region=${AWS_REGION}
       image_tag="${account_id}.dkr.ecr.${region}.amazonaws.com/eq/ruby-base-image:${CIRCLE_SHA1}"
-      latest_tag="ruby-2.7.8-latest"
       echo "export account_id=$account_id" >> $BASH_ENV
       echo "export region=$region" >>  $BASH_ENV
       echo "export image_tag=$image_tag" >>  $BASH_ENV
-      echo "export latest_tag=$latest_tag" >> $BASH_ENV
       
 jobs:
   docker-build-image:
@@ -42,37 +40,11 @@ jobs:
         image_name: $image_tag
         policy_failure: False
         timeout: '500'
-
-    #- run: 
-        # Delete old image with 'ruby-2.7.8-latest' tag
-        #name: Delete existing latest image before pushing
-        #command: |
-          #`aws ecr get-login --no-include-email --region ${region}`
-          #function delete_old_latest_image {
-            #aws ecr batch-delete-image --repository-name eq/ruby-base-image --image-ids imageTag="${latest_tag}" --region ${region}
-            #return_code=$?
-            #if [ $return_code -ne 0 ]; then
-              #echo "Error: Failed to delete existing image with tag '${latest_tag}'"
-              #exit $return_code
-            #fi
-          #}
-          #delete_old_latest_image eq/ruby-base-image "${latest_tag}"
-# Push docker image with tag and latest tag
-    - run: 
+    - deploy:
         name: Push docker-images to ecr with only the commit and latest tag
         command: |
-          if [ "$(aws ecr describe-repositories --query repositories[0].authorizationData[0].authorizationToken --output text)" = "" ]; then
-            `aws ecr get-login --no-include-email --region ${region}`
-          fi
-
-          existing_image_check=0
-
-          if [[ "$existing_image_check" =~ ^[0-9]+$ && "$existing_image_check" -gt 0 ]]; then
-            echo "Deleting existing image..."
-            aws ecr batch-delete-image --repository-name eq/ruby-base-image --image-ids imageTag=ruby-2.7.8-latest
-          fi
-
-          docker push "${image_tag}"
+          `aws ecr get-login --region ${region} --no-include-email`
+          docker push --force "${image_tag}"
           # tag as latest for auto-deploy
           function ecr-retag {
             echo "Retagging ecr image [${1}:${2}] as [${1}:${3}]"
@@ -93,6 +65,6 @@ workflows:
           filters:
             branches:
               only:
-                - main
+                - ruby-2.7.1
     jobs:
       - docker-build-image
