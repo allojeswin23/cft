@@ -12,15 +12,6 @@ jobs:
           docker_layer_caching: true
       - checkout
       - run:
-          name: Test AWS Access (Optional)
-          env:
-            # Securely pass AWS access credentials using temporary AWS session token
-            AWS_ACCESS_KEY_ID: ${{ aws sts assume-role --role-arn arn:aws:iam::YOUR_ACCOUNT_ID:role/YourECRRoleArn --duration 3600 | jq -r '.Credentials.AccessKeyId' }}
-            AWS_SECRET_ACCESS_KEY: ${{ aws sts assume-role --role-arn arn:aws:iam::YOUR_ACCOUNT_ID:role/YourECRRoleArn --duration 3600 | jq -r '.Credentials.SecretAccessKey' }}
-            AWS_SESSION_TOKEN: ${{ aws sts assume-role --role-arn arn:aws:iam::YOUR_ACCOUNT_ID:role/YourECRRoleArn --duration 3600 | jq -r '.Credentials.SessionToken' }}
-          command: |
-            aws sts get-caller-identity
-      - run:
           name: Set Environment Variables
           command: |
             account_id=$(aws sts get-caller-identity --output text --query "Account")
