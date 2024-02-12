@@ -42,3 +42,20 @@ jobs:
           image_name: $image_tag
           policy_failure: False
           timeout: '500'
+
+workflows:
+  version: 2
+  commit:
+    jobs:
+      - docker-build-image
+  
+  scheduled-workflow:
+    triggers:
+      - schedule:
+          cron: "0 12 * * 1"
+          filters:
+            branches:
+              only:
+                - ruby-2.7.1
+    jobs:
+      - docker-build-image
