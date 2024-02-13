@@ -7,12 +7,12 @@ RUN echo "Updating repos..." && apk update > /dev/null && \
     echo "Installing packages: ${PACKAGES}..." && apk add --no-cache $PACKAGES > /dev/null
     
 # Install dependencies for wkhtmltopdf
-RUN apk add --update --no-cache --wait 10 libstdc++ libx11 libxrender libxext libssl1.1 ca-certificates fontconfig freetype ttf-dejavu ttf-droid ttf-freefont ttf-liberation \
-    && apk add --update --no-cache --virtual .build-deps msttcorefonts-installer \
-    && update-ms-fonts \
-    && fc-cache -f \
-    && rm -rf /tmp/* \
-    && apk del .build-deps
+#RUN apk add --update --no-cache --wait 10 libstdc++ libx11 libxrender libxext libssl1.1 ca-certificates fontconfig freetype ttf-dejavu ttf-droid ttf-freefont ttf-liberation \
+    #&& apk add --update --no-cache --virtual .build-deps msttcorefonts-installer \
+    #&& update-ms-fonts \
+    #&& fc-cache -f \
+    #&& rm -rf /tmp/* \
+    #&& apk del .build-deps
 # Installing nodejs and aws-cli
 ENV PG_PACKAGES postgresql postgis nodejs npm aws-cli
 RUN echo "Updating repos..." && apk update --no-cache > /dev/null && \
