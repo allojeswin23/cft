@@ -78,5 +78,3 @@ workflows:
                 - ruby-2.7.2
     jobs:
       - docker-build-image
-
-##
