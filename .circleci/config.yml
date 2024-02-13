@@ -45,7 +45,7 @@ jobs:
         command: |
           # Function to delete existing images with tag ruby-2.7.8-latest
           function delete_existing_images {
-            existing_images=$(aws ecr list-images --repository-name eq/ruby-base-image --filter tagStatus=TAGGED --query 'imageIds[?imageTag==`ruby-2.7.8-latest`].imageDigest' --output text)
+            existing_images=$(aws ecr list-images --repository-name eq/ruby-base-image --filter tagStatus=TAGGED --region ${region} --query 'imageIds[?imageTag==`ruby-2.7.8-latest`].imageDigest' --output text)
             if [ -n "$existing_images" ]; then
               echo "Deleting existing images..."
               aws ecr batch-delete-image --repository-name eq/ruby-base-image --image-ids $(for digest in $existing_images; do echo "imageDigest=$digest"; done)
