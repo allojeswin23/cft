@@ -48,7 +48,7 @@ jobs:
             existing_images=$(aws ecr list-images --repository-name eq/ruby-base-image --filter tagStatus=TAGGED --region ${region} --query 'imageIds[?imageTag==`ruby-2.7.8-latest`].imageDigest' --output text)
             if [ -n "$existing_images" ]; then
               echo "Deleting existing images..."
-              aws ecr batch-delete-image --repository-name eq/ruby-base-image --image-ids $(for digest in $existing_images; do echo "imageDigest=$digest"; done)
+              aws ecr batch-delete-image --repository-name eq/ruby-base-image --image-ids --region ${region} $(for digest in $existing_images; do echo "imageDigest=$digest"; done)
             fi
           }
 
