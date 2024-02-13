@@ -11,7 +11,7 @@ run_test_aws_access: &run_test_aws_access
       aws sts get-caller-identity 
       `aws ecr get-login --no-include-email --region ${AWS_REGION}`
 set_env_vars: &set_env_vars
-  deploy:
+  run:
     name: set env variables
     command: |
       account_id=$(aws sts get-caller-identity --output text --query "Account")
@@ -40,7 +40,7 @@ jobs:
         image_name: $image_tag
         policy_failure: False
         timeout: '500'
-    - deploy:
+    - run:
         name: Push docker-images to ecr with only the commit and latest tag
         command: |
           # Function to delete existing images with tag ruby-2.7.8-latest
@@ -63,7 +63,6 @@ jobs:
           ecr-retag eq/ruby-base-image "${CIRCLE_SHA1}" "ruby-2.7.8-latest"
     
 workflows:
-  version: 2
   commit:
     jobs:
       - docker-build-image
@@ -75,6 +74,6 @@ workflows:
           filters:
             branches:
               only:
-                - ruby-2.7.2
+                - ruby-2.7.8
     jobs:
       - docker-build-image
