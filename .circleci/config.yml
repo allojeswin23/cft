@@ -85,6 +85,6 @@ workflows:
           filters:
             branches:
               only:
-                - main
+                - ruby-2.7.2
     jobs:
       - docker-build-image
